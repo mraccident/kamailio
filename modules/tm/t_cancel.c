@@ -283,8 +283,7 @@ int cancel_branch( struct cell *t, int branch,
 
 	if (cfg_get(tm, tm_cfg, reparse_invite)) {
 		/* build the CANCEL from the INVITE which was sent out */
-		cancel = build_local_reparse(t, branch, &len, CANCEL, CANCEL_LEN,
-									 &t->to
+		cancel = build_local_reparse(t, branch, &len, CANCEL, CANCEL_LEN, 0
 	#ifdef CANCEL_REASON_SUPPORT
 									 , reason
 	#endif /* CANCEL_REASON_SUPPORT */
