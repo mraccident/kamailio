@@ -47,6 +47,7 @@
  *             prepare_to_cancel() takes now an additional skip_branches
  *              bitmap parameter (andrei)
  * 2010-02-26  cancel reason (rfc3326) basic support (andrei)
+ * 2013-09-03  always use to-URI from UAC buffer (flowroute)
  */
 
 #include <stdio.h> /* for FILE* in fifo_uac_cancel */
@@ -283,6 +284,10 @@ int cancel_branch( struct cell *t, int branch,
 
 	if (cfg_get(tm, tm_cfg, reparse_invite)) {
 		/* build the CANCEL from the INVITE which was sent out */
+        /* NOTE: we now pass 0 for the to-URI instead of &t->to, so
+         * build_local_reparse will use the to-URI from the UAC buffer,
+         * which should always be used when it differs from the URI in
+         * the originally received INVITE. */
 		cancel = build_local_reparse(t, branch, &len, CANCEL, CANCEL_LEN, 0
 	#ifdef CANCEL_REASON_SUPPORT
 									 , reason
