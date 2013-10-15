@@ -42,5 +42,7 @@ typedef int (*t_continue_f)(unsigned int hash_index, unsigned int label,
 int t_cancel_suspend(unsigned int hash_index, unsigned int label);
 typedef int (*t_cancel_suspend_f)(unsigned int hash_index, unsigned int label);
 
+#define LOCK_CONTINUE(_t) lock(&(_t)->continue_mutex )
+#define UNLOCK_CONTINUE(_t) unlock(&(_t)->continue_mutex )
 
 #endif /* _T_SUSPEND_H */

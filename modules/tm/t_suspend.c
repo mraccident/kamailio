@@ -140,7 +140,7 @@ int t_continue(unsigned int hash_index, unsigned int label,
 
 	/* The transaction has to be locked to protect it
 	 * form calling t_continue() multiple times simultaneously */
-	LOCK_REPLIES(t);
+	LOCK_CONTINUE(t);
 
 	/* Try to find the blind UAC, and cancel its fr timer.
 	 * We assume that the last blind uac called t_continue(). */
@@ -155,7 +155,7 @@ int t_continue(unsigned int hash_index, unsigned int label,
 			/* Either t_continue() has already been
 			 * called or the branch has already timed out.
 			 * Needless to continue. */
-			UNLOCK_REPLIES(t);
+			UNLOCK_CONTINUE(t);
 			UNREF(t); /* t_unref would kill the transaction */
 			return 1;
 		}
@@ -224,7 +224,7 @@ int t_continue(unsigned int hash_index, unsigned int label,
 		}
 	}
 
-	UNLOCK_REPLIES(t);
+	UNLOCK_CONTINUE(t);
 
 	/* unref the transaction */
 	t_unref(t->uas.request);
@@ -241,10 +241,10 @@ kill_trans:
 			"reply generation failed\n");
 		/* The transaction must be explicitely released,
 		 * no more timer is running */
-		UNLOCK_REPLIES(t);
+		UNLOCK_CONTINUE(t);
 		t_release_transaction(t);
 	} else {
-		UNLOCK_REPLIES(t);
+		UNLOCK_CONTINUE(t);
 	}
 
 	t_unref(t->uas.request);
