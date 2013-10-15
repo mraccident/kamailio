@@ -419,7 +419,7 @@ typedef struct cell
 	/* protection against concurrent reply processing */
 	ser_lock_t   reply_mutex;
 	
-	/* protection against concurrent reply processing */
+	/* protection against concurrent runs of t_continue() */
 	ser_lock_t   continue_mutex;
 
 	ticks_t fr_timeout;     /* final response interval for retr_bufs */
