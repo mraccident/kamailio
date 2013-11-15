@@ -969,6 +969,15 @@ static int filter_body_f(struct sip_msg* msg, char* _content_type,
 		    }
 		    if (find_line_start(boundary.s, boundary.len, &start,
 					&len)) { 
+			/* Kamailio will, without the following two lines,
+			 * include in the filtered body a trailing CRLF which
+			 * is part of the multipart MIME boundary. This should
+			 * not be included in the filtered body, as it is not
+			 * part of the body. So, these lines adjust the size of
+			 * the block to delete such that the CRLF is deleted as
+			 * well. */
+			start -= 2;
+			len += 2;
 			if (del_lump(msg, start - msg->buf, len, 0) == 0) {
 			    LM_ERR("deleting lump <%.*s> failed\n",
 				   len, start);
@@ -2366,4 +2375,3 @@ static int fixup_subst_hf(void** param, int param_no)
 		return fixup_substre(param, 1);
 	return 0;
 }
-
