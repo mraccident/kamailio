@@ -49,6 +49,7 @@
  */
 
 
+#define _GNU_SOURCE
 #include "../../action.h"
 #include "../../sr_module.h"
 #include "../../dprint.h"
@@ -875,7 +876,7 @@ static inline int find_line_start(char *text, unsigned int text_len,
 static int filter_body_f(struct sip_msg* msg, char* _content_type,
 			 char* ignored)
 {
-	char *start;
+	char *start, *header_end;
 	unsigned int len;
 	str *content_type, body, params, boundary;
 	param_hooks_t hooks;
@@ -958,11 +959,14 @@ static int filter_body_f(struct sip_msg* msg, char* _content_type,
 			LM_ERR("no CRLF found after content type\n");
 			goto err;
 		    }
-		    start = start + 2;
-		    len = len - content_type->len - 2;
-		    while ((len > 0) && ((*start == 13) || (*start == 10))) {
-			len = len - 1;
-			start = start + 1;
+		    /* Look for the end of the MIME headers for this MIME
+		     * part. */
+		    if ((header_end = memmem(start, len, "\r\n\r\n", 4))) {
+			start = header_end + 4;
+			len = body.len - (start - body.s);
+		    } else {
+			LM_ERR("couldn't find double CRLF\n");
+			goto err;
 		    }
 		    if (del_lump(msg, body.s - msg->buf, start - body.s, 0)
 			== 0) {
