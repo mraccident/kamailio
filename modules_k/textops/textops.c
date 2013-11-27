@@ -837,16 +837,19 @@ error:
 
 
 static inline int find_line_start(char *text, unsigned int text_len,
-				  char **buf, unsigned int *buf_len)
+				  char **buf, unsigned int *buf_len,
+				  int match_case)
 {
     char *ch, *start;
     unsigned int len;
+    int (*comparison)(const char *, const char *, size_t);
+    comparison = match_case? strncmp : strncasecmp;
 
     start = *buf;
     len = *buf_len;
 
     while (text_len <= len) {
-	if (strncmp(text, start, text_len) == 0) {
+	if (comparison(text, start, text_len) == 0) {
 	    *buf = start;
 	    *buf_len = len;
 	    return 1;
@@ -942,7 +945,7 @@ static int filter_body_f(struct sip_msg* msg, char* _content_type,
 	start = body.s;
 	len = body.len;
 	
-	while (find_line_start("Content-Type: ", 14, &start, &len)) {
+	while (find_line_start("Content-Type: ", 14, &start, &len, 0)) {
 	    start = start + 14;
 	    len = len - 14;
 	    if (len > content_type->len + 2) {
@@ -968,7 +971,7 @@ static int filter_body_f(struct sip_msg* msg, char* _content_type,
 			goto err;
 		    }
 		    if (find_line_start(boundary.s, boundary.len, &start,
-					&len)) { 
+					&len, 1)) {
 			/* Kamailio will, without the following two lines,
 			 * include in the filtered body a trailing CRLF which
 			 * is part of the multipart MIME boundary. This should
