@@ -49,6 +49,7 @@
  */
 
 
+#define _GNU_SOURCE
 #include "../../action.h"
 #include "../../sr_module.h"
 #include "../../dprint.h"
@@ -837,16 +838,19 @@ error:
 
 
 static inline int find_line_start(char *text, unsigned int text_len,
-				  char **buf, unsigned int *buf_len)
+				  char **buf, unsigned int *buf_len,
+				  int match_case)
 {
     char *ch, *start;
     unsigned int len;
+    int (*comparison)(const char *, const char *, size_t);
+    comparison = match_case? strncmp : strncasecmp;
 
     start = *buf;
     len = *buf_len;
 
     while (text_len <= len) {
-	if (strncmp(text, start, text_len) == 0) {
+	if (comparison(text, start, text_len) == 0) {
 	    *buf = start;
 	    *buf_len = len;
 	    return 1;
@@ -872,7 +876,7 @@ static inline int find_line_start(char *text, unsigned int text_len,
 static int filter_body_f(struct sip_msg* msg, char* _content_type,
 			 char* ignored)
 {
-	char *start;
+	char *start, *header_end;
 	unsigned int len;
 	str *content_type, body, params, boundary;
 	param_hooks_t hooks;
@@ -942,7 +946,7 @@ static int filter_body_f(struct sip_msg* msg, char* _content_type,
 	start = body.s;
 	len = body.len;
 	
-	while (find_line_start("Content-Type: ", 14, &start, &len)) {
+	while (find_line_start("Content-Type: ", 14, &start, &len, 0)) {
 	    start = start + 14;
 	    len = len - 14;
 	    if (len > content_type->len + 2) {
@@ -955,11 +959,14 @@ static int filter_body_f(struct sip_msg* msg, char* _content_type,
 			LM_ERR("no CRLF found after content type\n");
 			goto err;
 		    }
-		    start = start + 2;
-		    len = len - content_type->len - 2;
-		    while ((len > 0) && ((*start == 13) || (*start == 10))) {
-			len = len - 1;
-			start = start + 1;
+		    /* Look for the end of the MIME headers for this MIME
+		     * part. */
+		    if ((header_end = memmem(start, len, "\r\n\r\n", 4))) {
+			start = header_end + 4;
+			len = body.len - (start - body.s);
+		    } else {
+			LM_ERR("couldn't find double CRLF\n");
+			goto err;
 		    }
 		    if (del_lump(msg, body.s - msg->buf, start - body.s, 0)
 			== 0) {
@@ -968,7 +975,7 @@ static int filter_body_f(struct sip_msg* msg, char* _content_type,
 			goto err;
 		    }
 		    if (find_line_start(boundary.s, boundary.len, &start,
-					&len)) { 
+					&len, 1)) {
 			/* Kamailio will, without the following two lines,
 			 * include in the filtered body a trailing CRLF which
 			 * is part of the multipart MIME boundary. This should
