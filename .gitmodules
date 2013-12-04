@@ -6,4 +6,4 @@
 	url = https://github.com/flowroute/kamailio-jsonrpc-module.git
 [submodule "modules/db_jsonrpc"]
 	path = modules/db_jsonrpc
-	url = git@git.internal:db_jsonrpc
+	url = git@gitlab.internal:dev/db_jsonrpc.git
